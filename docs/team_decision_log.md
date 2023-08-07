@@ -17,6 +17,7 @@ you like the best.
 | 2	| Project Backlog Tool | | | | | | |
 |   |	- Notion | | | | | | |
 |   |	- Jira | | | | | | |
+|   |	- Trello |X | | | | | |
 | 3	| Technical Stack (vote by adding your pref. in the cell under your name) | | | | | | |
 |   |	- BE Language | | | | | | |
 |   |	- Node JS |X | | | | | |
