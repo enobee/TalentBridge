@@ -14,6 +14,6 @@ you like the best.
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | E-commerce | A Full-stack E-commerce website with actual payment and CMS for admins | X | | | X | | |
 | Music Player | An indie-based looking music player with playlist feature | | X | X | | | |
-| Chat App | A real-time chat application | | | | X | | |
+| Chat App | A real-time chat application | | X | | X | | |
 | Animated UI Library | UI Components Using Framer-motion |X | | | | | |
 | Last idea | Description | | | | | | |
