@@ -10,9 +10,9 @@ sentences.
 Each team member should Place an 'X' under their name to vote for the ideas 
 you like the best.
 
-| Project Idea | Description | Farhad | teammate name | teammate name | teammate name | teammate name | teammate name |
+| Project Idea | Description | Farhad | Hamdi | teammate name | teammate name | teammate name | teammate name |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | E-commerce | A Full-stack E-commerce website with actual payment and CMS for admins | X | | | | | |
-| Music Player | An indie-based looking music player with playlist feature | Hamdi | | | | | |
+| Music Player | An indie-based looking music player with playlist feature | | X | | | | |
 | ... | Description | | | | | | |
 | Last idea | Description | | | | | | |
