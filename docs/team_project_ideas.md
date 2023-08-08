@@ -15,4 +15,5 @@ you like the best.
 | E-commerce | A Full-stack E-commerce website with actual payment and CMS for admins | X | | | X | | |
 | Music Player | An indie-based looking music player with playlist feature | | X | X | | | |
 | Chat App | A real-time chat application | | | | X | | |
+| Animated UI Library | A real-time chat application |X | | | | | |
 | Last idea | Description | | | | | | |
