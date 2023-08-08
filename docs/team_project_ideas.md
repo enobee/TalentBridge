@@ -13,6 +13,6 @@ you like the best.
 | Project Idea | Description | Farhad | teammate name | teammate name | teammate name | teammate name | teammate name |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | E-commerce | A Full-stack E-commerce website with actual payment and CMS for admins | X | | | | | |
-| Second idea | Description | | | | | | |
+| Music Player | An indie-based looking music player with playlist feature | Hamdi | | | | | |
 | ... | Description | | | | | | |
 | Last idea | Description | | | | | | |
