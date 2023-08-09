@@ -10,10 +10,10 @@ sentences.
 Each team member should Place an 'X' under their name to vote for the ideas 
 you like the best.
 
-| Project Idea | Description | Farhad | Hamdi | Lasisi | enobee | teammate name | teammate name |
+| Project Idea | Description | Farhad | Hamdi | Lasisi | enobee | Umar | teammate name |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | E-commerce | A Full-stack E-commerce website with actual payment and CMS for admins | X | | | X | | |
-| Music Player | An indie-based looking music player with playlist feature | | X | X | | | |
-| Chat App | A real-time chat application | | X | | X | | |
+| Music Player | An indie-based looking music player with playlist feature | | X | X | | X | |
+| Chat App | A real-time chat application | | X | | X | X | |
 | Animated UI Library | UI Components Using Framer-motion |X | | | | | |
 | Last idea | Description | | | | | | |
