@@ -8,7 +8,7 @@ To set this up add each teammates name in the `teammate name` column. Each
 team member should Place an 'X' under their name to vote for the ideas 
 you like the best.
 
-| No. | Question/Option | Farhad | Lasisi | Hamdi | Teammate name | Teammate name | Teammate name |
+| No. | Question/Option | Farhad | Lasisi | Hamdi | Umar | Teammate name | Teammate name |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | 1 | Team meeting schedule | | | | | | |
 |   |	- Sprint Planning Sunday@9:00 a.m. CST | | | | | | |
@@ -20,31 +20,31 @@ you like the best.
 |   |	- Trello |X | | | | | |
 | 3	| Technical Stack (vote by adding your pref. in the cell under your name) | | | | | | |
 |   |	- BE Language | | | | | | |
-|   |	- Node JS |X |X | X | | | |
-|   |	- Express JS |X |X | X | | | |
+|   |	- Node JS |X |X | X | X | | |
+|   |	- Express JS |X |X | X | X | | |
 |   |	- FE Language | | | | | | |
-|   |	- JavaScript |X |X | X | | | |
+|   |	- JavaScript |X |X | X | X | | |
 |   |	- FE Framework | | | | | | |
-|   |	- React JS |X |X | X | | | |
+|   |	- React JS |X |X | X | X | | |
 |   |	- Next JS |X |X | | | | |
 |   |	- ML Framework | | | | | | |
 |   |	- Visualization/Graphics package (if required, e.g. D3, Nivo, etc.) | | | | | | |
 | 4	| Where to host the app? | | | | | | |
 |   |	- Heroku (suitable for FE, BE, & Postgres) |X | | | | | |
-|   |	- Netlify (suitable only for FE) |X | | | | | |
+|   |	- Netlify (suitable only for FE) |X | X | | | | |
 |   |	- Vercel (suitable only for FE) | X|X | | | | |
 |   |	- Mongo Atlas (suitable only for MongoDB) | X| | | | | |
 | 5	| BE/FE repos organization | | | | | | |
 |   |	- Separate GitHub repos for each | X| | | | | |
-|   |	- Single GitHub repo for both | |X | X | | | |
+|   |	- Single GitHub repo for both | |X | X | X | | |
 | 6	| Wireframing tool | | | | | | |
 |   |	- Paper & pencil | | | | | | |
 |   |	- Adobe XD | | | | | | |
 |   |	- Balsamiq | | | | | | |
-|   |	- Figma | X|X | X | | | |
+|   |	- Figma | X|X | X | X | | |
 | 7	| Who works in which part of the app? | | | | | | |
 |   | - BE (not applicable for Tier 1 teams) |X | | | | | |
-|   |	- FE |X |X | | | | |
+|   |	- FE |X |X | X | | | |
 |   |	- UI |X | | | | | |
 | 8	| ... | | | | | | |
 | n | ... | | | | | | |
