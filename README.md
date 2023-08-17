@@ -12,13 +12,17 @@ A job search app that bridges the gap between developers and employers, revoluti
 - Job notifications
 
 ## Tech Stacks
+
+### Front-End 
 - React
-- Node JS
 - TailwindCSS
-- MongoDB
-- Express JS
 - Framer Motion
-- JavaScript
+
+### Back-End
+- NodeJS
+- ExpressJS
+- MongoDB
+
 
 ## Tools
 - Visual studio code (vscode)
