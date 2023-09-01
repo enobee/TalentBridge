@@ -2,6 +2,8 @@ const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
 const validator = require('validator')
 const jwt = require('jsonwebtoken')
+const fs = require('fs')
+const path = require('path')
 
 const { sendEmail } = require("../utils/emailUtils");
 
@@ -36,8 +38,40 @@ const userSchema = new Schema({
   isVerified: {
     type: Boolean,
     default: false,
+  },
+  jobTitle: {
+    type: String,
+  },
+  userBio: { type: String },
+  skills: [
+    {
+      type: String, // Add the 'type' property here
+    }
+  ],
+  age: {
+    type: Number
+  },
+  location: {
+    type: String
+  },
+  personalWebsite: {
+    type: String
+  },
+  resume: {
+    type: String 
+  },
+  profilePicture: {
+    type: String 
+  },
+  socialMedia: {
+    linkedin: {
+      type: String, 
+    },
+    github: {
+      type: String, 
+    }
   }
-});
+}, {timestamps: true});
 
 // static signup method
 
@@ -143,7 +177,12 @@ userSchema.statics.login = async function(email, password) {
     throw Error("Email not verified. Please verify your email first.");
   }
 
-  return user;
+  // Generate an authentication token
+  const token = jwt.sign({ userId: user._id }, process.env.SECRET, {
+    expiresIn: "7d",
+  });
+
+  return {user, token};
 }
 
 // Static method for initiating password reset
@@ -174,6 +213,7 @@ userSchema.statics.initiatePasswordReset = async function(email) {
    sendEmail(email, subject, html);
 };
 
+// Static method for resetting password with token
 userSchema.statics.resetPasswordWithToken = async function (
   resetToken,
   newPassword
@@ -199,5 +239,63 @@ userSchema.statics.resetPasswordWithToken = async function (
     throw Error("Invalid or expired reset token");
   }
 };
+
+
+userSchema.statics.updateUserProfile = async function (
+  token,
+  updates,
+  profilePicturePath,
+  resumePath
+) {
+  try {
+    console.log({schemaToken: token})
+    const decodedToken = jwt.verify(token, process.env.SECRET); // Replace with your actual secret key
+    console.log({DecodedToken: decodedToken})
+
+    const user = await this.findById(
+       decodedToken.userId,
+      
+    );
+    console.log({foundUser: user})
+
+    
+    // Delete previous profile picture and resume
+    if (user.profilePicture) {
+     
+     const pathToUploads = path.join(__dirname, "../../public/uploads");
+     console.log(pathToUploads)
+     console.log(user.profilePicture)
+     fs.unlinkSync(path.join(pathToUploads, user.profilePicture));
+
+    }
+    if (user.resume) {
+      
+      const pathToUploads = path.join(__dirname, "../../public/uploads");
+      fs.unlinkSync(path.join(pathToUploads, user.resume));
+
+    }
+
+    // Update user's profile fields
+    const updatedUser = await this.findByIdAndUpdate(
+      decodedToken.userId,
+      {
+        $set: {
+          ...updates,
+          profilePicture: profilePicturePath,
+          resume: resumePath,
+        },
+      },
+      { new: true }
+    );
+    console.log(updatedUser)
+
+    return updatedUser;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
 
 module.exports = mongoose.model('User', userSchema)
