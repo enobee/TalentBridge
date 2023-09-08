@@ -2,7 +2,16 @@ const express = require('express')
 const upload = require("../middleware/multerConfig"); 
 
 // controller functions
-const { signupUser, verifyEmail, loginUser, initiatePasswordReset, resetPasswordWithToken, updateUserProfile } = require('../controllers/userController')
+const {
+  signupUser,
+  verifyEmail,
+  loginUser,
+  initiatePasswordReset,
+  resetPasswordWithToken,
+  updateUserProfile,
+  promoteToAdmin,
+  sendJobNotification
+} = require("../controllers/userController");
 
 const router = express.Router()
 
@@ -31,6 +40,13 @@ router.post(
   ]),
   updateUserProfile
 );
+
+// Route for promoting user to Admin
+router.post('/promote', promoteToAdmin)
+
+// Route for sending job notification
+router.post(
+  "/sendJobNotifications", sendJobNotification);
 
 
 
