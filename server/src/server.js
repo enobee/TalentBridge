@@ -5,6 +5,8 @@ const path = require("path");
 
 // const upload = require("./middleware/multerConfig"); 
 const userRoutes = require('./routes/userRoute')
+const jobListingRoutes = require("./routes/jobListingRoute");
+
 
 // express app
 const app = express()
@@ -27,6 +29,7 @@ app.use(
 
 //routes
 app.use('/api/user', userRoutes)
+app.use('/api/job', jobListingRoutes);
 
 
 // connect to db

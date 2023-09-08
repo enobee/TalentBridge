@@ -1,83 +1,102 @@
 const mongoose = require('mongoose')
-const bcrypt = require('bcrypt')
 const validator = require('validator')
 const jwt = require('jsonwebtoken')
 const fs = require('fs')
 const path = require('path')
+const cron = require("node-cron");
 
 const { sendEmail } = require("../utils/emailUtils");
+const { findMatchingJobs } = require("../utils/findJobMatching");
+const { hashPassword, comparePasswords } = require("../utils/bcryptUtils");
 
 
 // const { createError } = require('../middleware/createError')
 
 const Schema = mongoose.Schema
 
-const userSchema = new Schema({
-  firstname: {
-    type: String,
-    required: true,
-  },
-  lastname: {
-    type: String,
-    required: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    trim: true,
-    unique: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  role: {
-    type: String,
-    default: "user",
-  },
-  isVerified: {
-    type: Boolean,
-    default: false,
-  },
-  jobTitle: {
-    type: String,
-  },
-  userBio: { type: String },
-  skills: [
-    {
-      type: String, // Add the 'type' property here
-    }
-  ],
-  age: {
-    type: Number
-  },
-  location: {
-    type: String
-  },
-  personalWebsite: {
-    type: String
-  },
-  resume: {
-    type: String 
-  },
-  profilePicture: {
-    type: String 
-  },
-  socialMedia: {
-    linkedin: {
-      type: String, 
+const userSchema = new Schema(
+  {
+    firstname: {
+      type: String,
+      required: true,
     },
-    github: {
-      type: String, 
-    }
-  }
-}, {timestamps: true});
+    lastname: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    company: {
+      type: String,
+    },
+    role: {
+      type: String,
+      enum: ["user", "employer", "admin"],
+      default: "user",
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    jobTitle: {
+      type: String,
+    },
+    userBio: { type: String },
+    skills: [
+      {
+        type: String,
+      },
+    ],
+    age: {
+      type: Number,
+    },
+    location: {
+      type: String,
+    },
+    personalWebsite: {
+      type: String,
+    },
+    resume: {
+      type: String,
+    },
+    profilePicture: {
+      type: String,
+    },
+    socialMedia: {
+      linkedin: {
+        type: String,
+      },
+      github: {
+        type: String,
+      },
+    },
+    receiveJobNotifications: {
+      type: Boolean,
+      default: false, 
+    },
+    jobPreferences: [
+      {
+        type: String,
+      },
+    ],
+    notifiedJobs: [{ type: mongoose.Schema.Types.ObjectId, ref: "JobListing" }],
+  },
+  { timestamps: true }
+);
 
-// static signup method
 
+// Static method for user signup
 userSchema.statics.signup = async function(firstname, lastname, email, password) {
+  
   // validation
-
   if (!firstname || !lastname || !email || !password) {
     throw Error("All fields must be filled");
   }
@@ -94,19 +113,18 @@ userSchema.statics.signup = async function(firstname, lastname, email, password)
     throw Error("Email already in use");
   }
 
-  const salt = await bcrypt.genSalt(10);
-  const hash = await bcrypt.hash(password, salt);
+  const hashedPassword = await hashPassword(password);
 
   const user = await this.create({
     firstname,
     lastname,
     email,
-    password: hash,
+    password: hashedPassword,
     isVerified: false,
   });
 
   // Create a JWT for email verification using user's _id
-  const token = jwt.sign(
+  const verificationToken = jwt.sign(
     { userId: user._id },
     process.env.SECRET,
     { expiresIn: "10m" } // Token expires in 10 min
@@ -116,8 +134,15 @@ userSchema.statics.signup = async function(firstname, lastname, email, password)
   const subject = "Account Verification";
   const html = `
         <p>Dear ${firstname},</p>
-        <p>Click the following link to verify your email:</p>
-        <a href="http://localhost:4000/api/user/verify/${token}">Verify Email</a>
+        <p>Thank you for signing up for TalentBridge. Click on the link below to verify your email:</p>
+        <a href="process.env.APP_URI}/api/user/verify/${token}">Verify Email</a>
+        <p>This link will expire in 24 hours. If you did not sign up for a Render account,
+          you can safely ignore this email.</p>
+        <br>
+
+        <p>Best,</p>
+
+        <p>The TalentBridge Team</p>
     `;
 
   await sendEmail(email, subject, html);
@@ -128,7 +153,7 @@ userSchema.statics.signup = async function(firstname, lastname, email, password)
 // Static method for verifying email
 userSchema.statics.verifyEmail = async function(token) {
     try {
-        console.log({VerifiedToken: token})
+        
         const decoded = jwt.verify(token, process.env.SECRET);
         console.log({Decoded: decoded})
 
@@ -153,8 +178,7 @@ userSchema.statics.verifyEmail = async function(token) {
     }
 };
 
-// static login method
-
+// Static method for user login
 userSchema.statics.login = async function(email, password) {
   // validation
   if (!email || !password) {
@@ -166,7 +190,7 @@ userSchema.statics.login = async function(email, password) {
     throw Error("Invalid Login Credentials");
   }
 
-  const match = await bcrypt.compare(password, user.password);
+  const match = await comparePasswords(password, user.password);
 
   if (!match) {
     throw Error("Invalid Login Credentials");
@@ -178,11 +202,11 @@ userSchema.statics.login = async function(email, password) {
   }
 
   // Generate an authentication token
-  const token = jwt.sign({ userId: user._id }, process.env.SECRET, {
+  const authToken = jwt.sign({ userId: user._id }, process.env.SECRET, {
     expiresIn: "7d",
   });
 
-  return {user, token};
+  return {user, authToken};
 }
 
 // Static method for initiating password reset
@@ -206,7 +230,8 @@ userSchema.statics.initiatePasswordReset = async function(email) {
     const html = `
             <p>Dear ${user.firstname},</p>
             <p>Click the following link to reset your password:</p>
-            <a href="http://localhost:4000/api/user/reset-password/${resetToken}">Reset Password</a>
+            <a href="process.env.APP_URI/api/user/reset-password/${resetToken}">Reset Password</a>
+            console.log(href)
         `;
 
 
@@ -228,10 +253,9 @@ userSchema.statics.resetPasswordWithToken = async function (
     }
 
     // Update user's password
-    const salt = await bcrypt.genSalt(10);
-    const hash = await bcrypt.hash(newPassword, salt);
+    const hashedPassword = await hashPassword(newPassword);
 
-    user.password = hash;
+    user.password = hashedPassword;
     await user.save();
 
     return user;
@@ -241,6 +265,7 @@ userSchema.statics.resetPasswordWithToken = async function (
 };
 
 
+// Static method for updating user profile
 userSchema.statics.updateUserProfile = async function (
   token,
   updates,
@@ -248,17 +273,11 @@ userSchema.statics.updateUserProfile = async function (
   resumePath
 ) {
   try {
-    console.log({schemaToken: token})
-    const decodedToken = jwt.verify(token, process.env.SECRET); // Replace with your actual secret key
-    console.log({DecodedToken: decodedToken})
+    const decodedToken = jwt.verify(token, process.env.SECRET); 
 
-    const user = await this.findById(
-       decodedToken.userId,
-      
-    );
-    console.log({foundUser: user})
+    const user = await this.findById(decodedToken.userId);
+   
 
-    
     // Delete previous profile picture and resume
     if (user.profilePicture) {
      
@@ -287,8 +306,7 @@ userSchema.statics.updateUserProfile = async function (
       },
       { new: true }
     );
-    console.log(updatedUser)
-
+    
     return updatedUser;
   } catch (error) {
     throw error;
@@ -297,5 +315,183 @@ userSchema.statics.updateUserProfile = async function (
 
 
 
+// Static method for Employers Registration
+userSchema.statics.registerEmployer = async function (email, password, firstname, lastname, company) {
+  try {
+    // validation
+    if (!firstname || !lastname || !email || !password || company) {
+      throw Error("All fields must be filled");
+    }
+    if (!validator.isEmail(email)) {
+      throw Error("Email is not Valid");
+    }
+    if (!validator.isStrongPassword(password)) {
+      throw Error("Password not strong enough");
+    }
+    // Check if the email is already registered
+    const existingUser = await this.findOne({ email });
+    if (existingUser) {
+      throw new Error("Email is already registered.");
+    }
 
-module.exports = mongoose.model('User', userSchema)
+    // Hash the password
+    const hashedPassword = await hashPassword(password);
+
+    // Create a new user with the "employer" role
+    const employer = new this({
+      email,
+      password: hashedPassword,
+      role: "employer",
+      firstname,
+      lastname,
+      company,
+    });
+
+    // Save the employer user to the database
+    await employer.save();
+
+    return employer;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Static method for Admin Registration
+// userSchema.statics.registerAdmin = async function (email, password, firstname, lastname) {
+//   try {
+//     // Check if the email is already registered
+//     const existingUser = await this.findOne({ email });
+//     if (existingUser) {
+//       throw new Error('Email is already registered.');
+//     }
+
+//     // Hash the password
+//     const hashedPassword = await hashPassword(password);
+
+//     // Create a new user with the "admin" role
+//     const admin = new this({
+//       email,
+//       password: hashedPassword,
+//       role: 'admin',
+//       fullName,
+//     });
+
+//     // Save the admin user to the database
+//     await admin.save();
+
+//     return admin;
+//   } catch (error) {
+//     throw error;
+//   }
+// };
+
+
+// Static method for promoting user to admin
+userSchema.statics.promoteToAdmin = async function (userId) {
+  try {
+    const user = await this.findById(userId);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Check if the user is already an admin
+    if (user.role === "admin") {
+      throw new Error("User is already an admin");
+    }
+
+    // Promote the user to admin
+    user.role = "admin";
+
+    // Save the updated user document
+    await user.save();
+
+    return user;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// userSchema.statics.getAllUsers = async function () {
+//   try {
+//     const users =await this.find()
+//   }
+// }
+
+
+// Static method for sending job notifications
+userSchema.statics.sendJobNotifications = async function () {
+  try {
+    
+    const JobListing = mongoose.model('JobListing'); // Replace 'JobListing' with your actual model name
+
+    // Retrieve all users with job preferences who want to receive notifications
+    const usersWithPreferences = await this.find({
+      jobPreferences: { $exists: true, $not: { $size: 0 } }, // Users with non-empty preferences
+      receiveJobNotifications: true, // Assuming you have a field for this setting
+      isVerified: true, // Optionally, ensure users are verified
+    });
+
+    // Loop through each user
+    usersWithPreferences.forEach(async (user) => {
+      // Find all job listings
+      const jobListings = await JobListing.find();
+
+      // Use the corrected findMatchingJobs function
+      const matchedJobs = findMatchingJobs(user, jobListings);
+
+      // Find new jobs that haven't been notified yet
+      const newJobsToNotify = matchedJobs.filter((job) => {
+        return !user.notifiedJobs.includes(job._id);
+      });
+
+      if (newJobsToNotify.length > 0) {
+        const jobTitles = newJobsToNotify.map((job) => job.title).join(", ");
+
+        // Send email here...
+
+        // Create a list of clickable job title links
+        // const jobTitleLinks = jobTitles
+        //   .map((jobTitle) => {
+        //     const jobPageURL = `https://your-website.com/job/${encodeURIComponent(
+        //       jobTitle
+        //     )}`;
+        //     return `<a href="${jobPageURL}">${jobTitle}</a>`;
+        //   })
+        //   .join("<br>");
+
+        const subject = "New Job Matches";
+        const html = `
+        <p>New jobs that match your preferences: ${jobTitles}.</p>
+        <br>
+
+        <p>Best,</p>
+
+        <p>The TalentBridge Team</p>
+    `;
+
+        await sendEmail(user.email, subject, html);
+
+        // Update user's notifiedJobs with the IDs of the newly notified jobs
+        user.notifiedJobs = user.notifiedJobs.concat(
+          newJobsToNotify.map((job) => job._id)
+        );
+        await user.save();
+      }
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Schedule the task to run daily
+cron.schedule('0 0 * * *', () => {
+  this.sendJobNotifications(); 
+});
+
+module.exports = mongoose.model('User', userSchema);
+
+
+
+
+
