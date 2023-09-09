@@ -1,18 +1,17 @@
-const mongoose = require('mongoose')
-const validator = require('validator')
-const jwt = require('jsonwebtoken')
-const fs = require('fs')
-const path = require('path')
+const mongoose = require("mongoose");
+const validator = require("validator");
+const jwt = require("jsonwebtoken");
+const fs = require("fs");
+const path = require("path");
 const cron = require("node-cron");
 
 const { sendEmail } = require("../utils/emailUtils");
 const { findMatchingJobs } = require("../utils/findJobMatching");
 const { hashPassword, comparePasswords } = require("../utils/bcryptUtils");
 
-
 // const { createError } = require('../middleware/createError')
 
-const Schema = mongoose.Schema
+const Schema = mongoose.Schema;
 
 const userSchema = new Schema(
   {
@@ -80,7 +79,7 @@ const userSchema = new Schema(
     },
     receiveJobNotifications: {
       type: Boolean,
-      default: false, 
+      default: false,
     },
     jobPreferences: [
       {
@@ -92,10 +91,13 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
-
 // Static method for user signup
-userSchema.statics.signup = async function(firstname, lastname, email, password) {
-  
+userSchema.statics.signup = async function (
+  firstname,
+  lastname,
+  email,
+  password
+) {
   // validation
   if (!firstname || !lastname || !email || !password) {
     throw Error("All fields must be filled");
@@ -135,8 +137,8 @@ userSchema.statics.signup = async function(firstname, lastname, email, password)
   const html = `
         <p>Dear ${firstname},</p>
         <p>Thank you for signing up for TalentBridge. Click on the link below to verify your email:</p>
-        <a href="process.env.APP_URI}/api/user/verify/${token}">Verify Email</a>
-        <p>This link will expire in 24 hours. If you did not sign up for a Render account,
+        <a href="${process.env.APP_URI}/api/user/verify/${verificationToken}">Verify Email</a>
+        <p>This link will expire in 10 minutes. If you did not sign up for a TalentBridge account,
           you can safely ignore this email.</p>
         <br>
 
@@ -148,38 +150,36 @@ userSchema.statics.signup = async function(firstname, lastname, email, password)
   await sendEmail(email, subject, html);
 
   return user; // Return the verification token for testing purposes
-}
+};
 
 // Static method for verifying email
-userSchema.statics.verifyEmail = async function(token) {
-    try {
-        
-        const decoded = jwt.verify(token, process.env.SECRET);
-        console.log({Decoded: decoded})
+userSchema.statics.verifyEmail = async function (token) {
+  try {
+    const decoded = jwt.verify(token, process.env.SECRET);
+    console.log({ Decoded: decoded });
 
-        // Find the user by _id
-        const user = await this.findById(decoded.userId);
-        console.log({verifiedUser: user})
+    // Find the user by _id
+    const user = await this.findById(decoded.userId);
 
-        if (!user) {
-            throw Error('User not found');
-        }
-
-        if (user.isVerified) {
-            throw Error('Email already verified');
-        }
-
-        user.isVerified = true;
-        await user.save();
-
-        return user;
-    } catch (error) {
-        throw Error('Invalid or expired verification token');
+    if (!user) {
+      throw Error("User not found");
     }
+
+    if (user.isVerified) {
+      throw Error("Email already verified");
+    }
+
+    user.isVerified = true;
+    await user.save();
+
+    return user;
+  } catch (error) {
+    throw Error("Invalid or expired verification token");
+  }
 };
 
 // Static method for user login
-userSchema.statics.login = async function(email, password) {
+userSchema.statics.login = async function (email, password) {
   // validation
   if (!email || !password) {
     throw Error("All fields must be filled");
@@ -202,40 +202,43 @@ userSchema.statics.login = async function(email, password) {
   }
 
   // Generate an authentication token
-  const authToken = jwt.sign({ userId: user._id }, process.env.SECRET, {
-    expiresIn: "7d",
-  });
+  const authToken = jwt.sign(
+    { userId: user._id, role: user.role },
+    process.env.SECRET,
+    {
+      expiresIn: "7d",
+    }
+  );
 
-  return {user, authToken};
-}
+  return { user, authToken };
+};
 
 // Static method for initiating password reset
-userSchema.statics.initiatePasswordReset = async function(email) {
-    const user = await this.findOne({ email });
+userSchema.statics.initiatePasswordReset = async function (email) {
+  const user = await this.findOne({ email });
 
-    if (!user) {
-        throw Error("User not found");
-    }
+  if (!user) {
+    throw Error("User not found");
+  }
 
-    // Create a JWT for password reset
-    const resetToken = jwt.sign(
-        { userId: user._id },
-        process.env.SECRET,
-        { expiresIn: '10m' } // Token expires in 1 day
-    );
+  // Create a JWT for password reset
+  const resetToken = jwt.sign(
+    { userId: user._id },
+    process.env.SECRET,
+    { expiresIn: "10m" } // Token expires in 1 day
+  );
 
-    // Send password reset email
+  // Send password reset email
 
-    const subject = "Password Reset";
-    const html = `
+  const subject = "Password Reset";
+  const html = `
             <p>Dear ${user.firstname},</p>
             <p>Click the following link to reset your password:</p>
             <a href="process.env.APP_URI/api/user/reset-password/${resetToken}">Reset Password</a>
             console.log(href)
         `;
 
-
-   sendEmail(email, subject, html);
+  sendEmail(email, subject, html);
 };
 
 // Static method for resetting password with token
@@ -264,7 +267,6 @@ userSchema.statics.resetPasswordWithToken = async function (
   }
 };
 
-
 // Static method for updating user profile
 userSchema.statics.updateUserProfile = async function (
   token,
@@ -273,25 +275,20 @@ userSchema.statics.updateUserProfile = async function (
   resumePath
 ) {
   try {
-    const decodedToken = jwt.verify(token, process.env.SECRET); 
+    const decodedToken = jwt.verify(token, process.env.SECRET);
 
     const user = await this.findById(decodedToken.userId);
-   
 
     // Delete previous profile picture and resume
     if (user.profilePicture) {
-     
-     const pathToUploads = path.join(__dirname, "../../public/uploads");
-     console.log(pathToUploads)
-     console.log(user.profilePicture)
-     fs.unlinkSync(path.join(pathToUploads, user.profilePicture));
-
+      const pathToUploads = path.join(__dirname, "../../public/uploads");
+      console.log(pathToUploads);
+      console.log(user.profilePicture);
+      fs.unlinkSync(path.join(pathToUploads, user.profilePicture));
     }
     if (user.resume) {
-      
       const pathToUploads = path.join(__dirname, "../../public/uploads");
       fs.unlinkSync(path.join(pathToUploads, user.resume));
-
     }
 
     // Update user's profile fields
@@ -306,20 +303,25 @@ userSchema.statics.updateUserProfile = async function (
       },
       { new: true }
     );
-    
+
     return updatedUser;
   } catch (error) {
     throw error;
   }
 };
 
-
-
 // Static method for Employers Registration
-userSchema.statics.registerEmployer = async function (email, password, firstname, lastname, company) {
+userSchema.statics.registerEmployer = async function (
+  firstname,
+  lastname,
+  email,
+  password,
+  company
+) {
   try {
+    console.log({ RegisterEmployer: email });
     // validation
-    if (!firstname || !lastname || !email || !password || company) {
+    if (!firstname || !lastname || !email || !password || !company) {
       throw Error("All fields must be filled");
     }
     if (!validator.isEmail(email)) {
@@ -346,6 +348,29 @@ userSchema.statics.registerEmployer = async function (email, password, firstname
       lastname,
       company,
     });
+    // Create a JWT for email verification using user's _id
+    const verificationToken = jwt.sign(
+      { userId: employer._id },
+      process.env.SECRET,
+      { expiresIn: "10m" } // Token expires in 10 min
+    );
+
+    // Send verification email
+    const subject = "Account Verification";
+    const html = `
+        <p>Dear ${firstname},</p>
+        <p>Thank you for signing up for TalentBridge. Click on the link below to verify your email:</p>
+        <a href="${process.env.APP_URI}/api/user/verify/${verificationToken}">Verify Email</a>
+        <p>This link will expire in 10 mins. If you did not sign up for a TalentBridge account,
+          you can safely ignore this email.</p>
+        <br>
+
+        <p>Best,</p>
+
+        <p>The TalentBridge Team</p>
+    `;
+
+    await sendEmail(email, subject, html);
 
     // Save the employer user to the database
     await employer.save();
@@ -356,40 +381,10 @@ userSchema.statics.registerEmployer = async function (email, password, firstname
   }
 };
 
-// Static method for Admin Registration
-// userSchema.statics.registerAdmin = async function (email, password, firstname, lastname) {
-//   try {
-//     // Check if the email is already registered
-//     const existingUser = await this.findOne({ email });
-//     if (existingUser) {
-//       throw new Error('Email is already registered.');
-//     }
-
-//     // Hash the password
-//     const hashedPassword = await hashPassword(password);
-
-//     // Create a new user with the "admin" role
-//     const admin = new this({
-//       email,
-//       password: hashedPassword,
-//       role: 'admin',
-//       fullName,
-//     });
-
-//     // Save the admin user to the database
-//     await admin.save();
-
-//     return admin;
-//   } catch (error) {
-//     throw error;
-//   }
-// };
-
-
 // Static method for promoting user to admin
-userSchema.statics.promoteToAdmin = async function (userId) {
+userSchema.statics.promoteToAdmin = async function (email) {
   try {
-    const user = await this.findById(userId);
+    const user = await this.findOne({ email });
 
     if (!user) {
       throw new Error("User not found");
@@ -412,18 +407,18 @@ userSchema.statics.promoteToAdmin = async function (userId) {
   }
 };
 
-// userSchema.statics.getAllUsers = async function () {
-//   try {
-//     const users =await this.find()
-//   }
-// }
-
+userSchema.statics.getAllUsers = async function () {
+  try {
+    return await this.find();
+  } catch (error) {
+    throw error;
+  }
+};
 
 // Static method for sending job notifications
 userSchema.statics.sendJobNotifications = async function () {
   try {
-    
-    const JobListing = mongoose.model('JobListing'); // Replace 'JobListing' with your actual model name
+    const JobListing = mongoose.model("JobListing"); // Replace 'JobListing' with your actual model name
 
     // Retrieve all users with job preferences who want to receive notifications
     const usersWithPreferences = await this.find({
@@ -485,13 +480,8 @@ userSchema.statics.sendJobNotifications = async function () {
 };
 
 // Schedule the task to run daily
-cron.schedule('0 0 * * *', () => {
-  this.sendJobNotifications(); 
+cron.schedule("0 0 * * *", () => {
+  this.sendJobNotifications();
 });
 
-module.exports = mongoose.model('User', userSchema);
-
-
-
-
-
+module.exports = mongoose.model("User", userSchema);
