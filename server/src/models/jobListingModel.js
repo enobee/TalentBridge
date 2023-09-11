@@ -219,7 +219,7 @@ jobListingSchema.statics.applyToJob = async function (jobId, userId) {
   }
 };
 
-JobListingSchema.statics.findApplicantsForJob = async function (jobId) {
+jobListingSchema.statics.findApplicantsForJob = async function (jobId) {
   try {
     const job = await this.findById(jobId);
     if (!job) {
