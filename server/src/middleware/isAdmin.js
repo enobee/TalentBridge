@@ -13,4 +13,4 @@ const userRole = req.user.role;
   }
 };
 
-export default isAdmin;
+module.exports = isAdmin;
