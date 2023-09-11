@@ -13,7 +13,13 @@ const {
   sendJobNotification,
   employerSignUp,
   getAllUsers,
+  getUserProfile,
+  deleteUser,
 } = require("../controllers/userController");
+
+const verifyToken = require("../middleware/verifyToken");
+const onlyEmployerAndAdmin = require("../middleware/onlyEmployersAndAdmin");
+const isAdmin = require("../middleware/isAdmin");
 
 const router = express.Router();
 
@@ -52,6 +58,12 @@ router.post("/sendJobNotifications", sendJobNotification);
 router.post("/employer-signup", employerSignUp);
 
 // Route for getting all Users
-router.post("/get-all-users", getAllUsers);
+router.get("/get-all-users", verifyToken, isAdmin, getAllUsers);
+
+// Route for getting a user profile
+router.get("/:id/profile", verifyToken, onlyEmployerAndAdmin, getUserProfile);
+
+// Route for deleting a user from database
+router.delete("/:userId", verifyToken, deleteUser);
 
 module.exports = router;

@@ -1,25 +1,20 @@
-const express = require('express')
-const mongoose = require('mongoose')
-require('dotenv').config()
+const express = require("express");
+const mongoose = require("mongoose");
+require("dotenv").config();
 const path = require("path");
+const cors = require("cors");
 
-// const upload = require("./middleware/multerConfig"); 
-const userRoutes = require('./routes/userRoute')
+const userRoutes = require("./routes/userRoute");
 const jobListingRoutes = require("./routes/jobListingRoute");
 
-
 // express app
-const app = express()
+const app = express();
 
 // middleware
 
-app.use(express.json())
-// app.use(
-//   upload.fields([
-//     { name: "profilePicture", maxCount: 1 },
-//     { name: "resume", maxCount: 1 }
-//   ])
-// );
+app.use(express.json());
+app.use(cors());
+
 
 // Serve uploaded files as static assets
 app.use(
@@ -28,18 +23,18 @@ app.use(
 );
 
 //routes
-app.use('/api/user', userRoutes)
-app.use('/api/job', jobListingRoutes);
-
+app.use("/api/user", userRoutes);
+app.use("/api/job", jobListingRoutes);
 
 // connect to db
-mongoose.connect(process.env.MONGO_URI)
- .then(() => {
-     // listen for requests
-     app.listen(process.env.PORT, () => {
-         console.log('connected to db & listening on port', process.env.PORT)
-     })
- })
- .catch((error) => {
-    console.log(error)
- })
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    // listen for requests
+    app.listen(process.env.PORT, () => {
+      console.log("connected to db & listening on port", process.env.PORT);
+    });
+  })
+  .catch((error) => {
+    console.log(error);
+  });

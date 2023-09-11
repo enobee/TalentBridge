@@ -130,6 +130,18 @@ const applyToJob = async (req, res) => {
   }
 };
 
+const getApplicantsForJob = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const applicants = await JobListing.findApplicantsForJob(id);
+
+    res.status(200).json({ applicants });
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching applicants for the job" });
+  }
+};
+
 module.exports = {
   createJobListing,
   updateJobListing,
@@ -138,5 +150,6 @@ module.exports = {
   getJobListingById,
   searchJobListing,
   filterJobListing,
-  applyToJob
+  applyToJob,
+  getApplicantsForJob,
 };

@@ -315,13 +315,13 @@ userSchema.statics.registerEmployer = async function (
   firstname,
   lastname,
   email,
-  password,
-  company
+  company,
+  password
 ) {
   try {
     console.log({ RegisterEmployer: email });
     // validation
-    if (!firstname || !lastname || !email || !password || !company) {
+    if (!firstname || !lastname || !email || !company || !password) {
       throw Error("All fields must be filled");
     }
     if (!validator.isEmail(email)) {
@@ -407,9 +407,26 @@ userSchema.statics.promoteToAdmin = async function (email) {
   }
 };
 
+// Static method for getting All Users (This is for only admins)
 userSchema.statics.getAllUsers = async function () {
   try {
-    return await this.find();
+    const users = await this.find();
+    return users;
+  } catch (error) {
+    throw new Error(`Error fetching all users: ${error.message}`);
+  }
+};
+
+// Statics method for getting user profile (It is applicable for both admins and employers(If employers want to see applicants profile))
+userSchema.statics.getUserProfile = async function (userId) {
+  try {
+    // Fetch the user's profile by their ID
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    return user;
   } catch (error) {
     throw error;
   }
@@ -474,6 +491,25 @@ userSchema.statics.sendJobNotifications = async function () {
         await user.save();
       }
     });
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Static method for deleting user account;
+userSchema.statics.deleteUser = async function (userId, email) {
+  try {
+    // Find the user by their ID and remove them from the database
+    const deletedUser = await this.findByIdAndRemove(userId);
+    if (!deletedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    if (deletedUser.email !== email) {
+      return res.status(400).json({
+        error: "Email confirmation failed. Please provide the correct email.",
+      });
+    }
+    return deletedUser;
   } catch (error) {
     throw error;
   }

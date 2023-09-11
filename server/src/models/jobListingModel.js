@@ -185,6 +185,7 @@ jobListingSchema.statics.searchJobListings = async function (
       query.$or = [
         { title: { $regex: searchQuery, $options: "i" } }, // Case-insensitive title search
         { description: { $regex: searchQuery, $options: "i" } }, // Case-insensitive description search
+        { location: { $regex: searchQuery, $options: "i" } }, // Case-insensitive location search
       ];
     }
 
@@ -203,9 +204,8 @@ jobListingSchema.statics.searchJobListings = async function (
 // Statics method to apply for jobs
 jobListingSchema.statics.applyToJob = async function (jobId, userId) {
   try {
-    console.log(jobId);
-    const job = await this.findById(jobId); // Populate the jobType field with user details
-    console.log({ job: job });
+    const job = await this.findById(jobId);
+
     // Check if the job is posted by an employer (jobType references an "employer" user)
     if (job.jobType === "employer") {
       job.applicants.push(userId);
@@ -214,6 +214,18 @@ jobListingSchema.statics.applyToJob = async function (jobId, userId) {
     } else {
       return "Please use the application link posted to apply for this job.";
     }
+  } catch (error) {
+    throw error;
+  }
+};
+
+JobListingSchema.statics.findApplicantsForJob = async function (jobId) {
+  try {
+    const job = await this.findById(jobId);
+    if (!job) {
+      throw new Error("Job listing not found");
+    }
+    return job.applicants;
   } catch (error) {
     throw error;
   }

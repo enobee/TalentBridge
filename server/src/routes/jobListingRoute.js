@@ -9,6 +9,7 @@ const {
   searchJobListing,
   filterJobListing,
   applyToJob,
+  getApplicantsForJob,
 } = require("../controllers/jobListingController");
 const verifyToken = require("../middleware/verifyToken");
 const onlyEmployerAndAdmin = require("../middleware/onlyEmployersAndAdmin");
@@ -50,5 +51,13 @@ router.get("/search-job-listing", searchJobListing);
 
 // Route for applying for a job
 router.post("/job-listing/:id/apply", verifyToken, applyToJob);
+
+// Route for getting application that applied for a Job
+router.get(
+  "/job-listing/:id/applicants",
+  verifyToken,
+  onlyEmployerAndAdmin,
+  getApplicantsForJob
+);
 
 module.exports = router;
