@@ -30,8 +30,12 @@ const jobListingSchema = new mongoose.Schema(
         ref: "User", // Reference to users who applied for the job
       },
     ],
+    hasUserApplied: {
+      type: Boolean,
+      default: false,
+    },
     keywords: [{ type: String }],
-    jobType: {
+    jobRole: {
       // this is to differentiate between an admin posting a job and an employer.
       type: String,
       enum: ["admin", "employer"],
@@ -207,13 +211,25 @@ jobListingSchema.statics.applyToJob = async function (jobId, userId) {
     const job = await this.findById(jobId);
 
     // Check if the job is posted by an employer (jobType references an "employer" user)
-    if (job.jobType === "employer") {
-      job.applicants.push(userId);
-      await job.save();
-      return "Application submitted successfully.";
-    } else {
-      return "Please use the application link posted to apply for this job.";
+    if (job.jobRole !== "employer") {
+      return res.status(400).json({
+        error: "Please use the application link posted to apply for this job.",
+      });
     }
+
+    // Check if the user has already applied for this job
+    if (job.hasUserApplied) {
+      return res
+        .status(400)
+        .json({ error: "You have already applied to this job listing." });
+    }
+    // If the user hasn't applied, set the hasUserApplied field to true
+    job.hasUserApplied = true;
+
+    // Add the user's ID to the applicants array
+    job.applicants.push(userId);
+    await job.save();
+    return "Application submitted successfully.";
   } catch (error) {
     throw error;
   }

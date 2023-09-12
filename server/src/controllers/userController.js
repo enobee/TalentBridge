@@ -5,7 +5,9 @@ const signupUser = async (req, res) => {
   try {
     const { firstname, lastname, email, password } = req.body;
     const user = await User.signup(firstname, lastname, email, password);
-    res.json({ message: "User created. Please verify your email." });
+    res
+      .status(201)
+      .json({ message: "User created. Please verify your email." });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -23,7 +25,7 @@ const employerSignUp = async (req, res) => {
       password,
       company
     );
-    res.json({
+    res.status(201).json({
       message: "Employer signup successful. Please verify your email.",
     });
   } catch (error) {
@@ -36,7 +38,9 @@ const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
     const user = await User.verifyEmail(token);
-    res.json({ message: "Email verified successfully. Please sign in" });
+    res
+      .status(200)
+      .json({ message: "Email verified successfully. Please sign in" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -63,7 +67,7 @@ const initiatePasswordReset = async (req, res) => {
   try {
     const { email } = req.body;
     await User.initiatePasswordReset(email);
-    res.json({
+    res.status(200).json({
       message: "Password reset initiated. Check your email for instructions.",
     });
   } catch (error) {
@@ -82,7 +86,7 @@ const resetPasswordWithToken = async (req, res) => {
     }
 
     await User.resetTokenWithPassword(token, newPassword);
-    res.json({ message: "Password reset successful." });
+    res.status(200).json({ message: "Password reset successful." });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -196,7 +200,8 @@ const deleteUser = async (req, res) => {
     const { userId } = req.params;
     const { email } = req.body;
 
-    const deletedUser = await User.deleteUser(userId);
+    const deletedUser = await User.deleteUser(userId, email);
+    res.status(200).json({ message: "User deleted successfully!!" });
   } catch (error) {
     res.status(500).json({ error: "Error deleting user" });
   }
