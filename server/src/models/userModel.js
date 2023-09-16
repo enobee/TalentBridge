@@ -8,6 +8,7 @@ const cron = require("node-cron");
 const { sendEmail } = require("../utils/emailUtils");
 const { findMatchingJobs } = require("../utils/findJobMatching");
 const { hashPassword, comparePasswords } = require("../utils/bcryptUtils");
+const { createError } = require("../middleware/createError");
 
 // const { createError } = require('../middleware/createError')
 
@@ -69,13 +70,11 @@ const userSchema = new Schema(
     profilePicture: {
       type: String,
     },
-    socialMedia: {
-      linkedin: {
-        type: String,
-      },
-      github: {
-        type: String,
-      },
+    linkedin: {
+      type: String,
+    },
+    github: {
+      type: String,
     },
     receiveJobNotifications: {
       type: Boolean,
@@ -100,19 +99,19 @@ userSchema.statics.signup = async function (
 ) {
   // validation
   if (!firstname || !lastname || !email || !password) {
-    throw Error("All fields must be filled");
+    return next(createError(400, "All fields must be filled"));
   }
   if (!validator.isEmail(email)) {
-    throw Error("Email is not Valid");
+    return next(createError(400, "Email is not Valid"));
   }
   if (!validator.isStrongPassword(password)) {
-    throw Error("Password not strong enough");
+    return next(createError(400, "Password not strong enough"));
   }
 
   const exists = await this.findOne({ email });
 
   if (exists) {
-    throw Error("Email already in use");
+    return next(createError(400, "Email already in use"));
   }
 
   const hashedPassword = await hashPassword(password);
@@ -137,7 +136,7 @@ userSchema.statics.signup = async function (
   const html = `
         <p>Dear ${firstname},</p>
         <p>Thank you for signing up for TalentBridge. Click on the link below to verify your email:</p>
-        <a href="${process.env.APP_URI}/api/user/verify/${verificationToken}">Verify Email</a>
+        <a href="${process.env.FRONTEND_APP_URI}sign-up/verify-email?token=${verificationToken}">Verify Email</a>
         <p>This link will expire in 10 minutes. If you did not sign up for a TalentBridge account,
           you can safely ignore this email.</p>
         <br>
@@ -156,17 +155,16 @@ userSchema.statics.signup = async function (
 userSchema.statics.verifyEmail = async function (token) {
   try {
     const decoded = jwt.verify(token, process.env.SECRET);
-    console.log({ Decoded: decoded });
 
     // Find the user by _id
     const user = await this.findById(decoded.userId);
 
     if (!user) {
-      throw Error("User not found");
+      return next(createError(404, "User not found"));
     }
 
     if (user.isVerified) {
-      throw Error("Email already verified");
+      return next(createError(400, "Email already verified"));
     }
 
     user.isVerified = true;
@@ -174,7 +172,7 @@ userSchema.statics.verifyEmail = async function (token) {
 
     return user;
   } catch (error) {
-    throw Error("Invalid or expired verification token");
+    return next(createError(401, "Invalid or expired verification token"));
   }
 };
 
@@ -182,23 +180,25 @@ userSchema.statics.verifyEmail = async function (token) {
 userSchema.statics.login = async function (email, password) {
   // validation
   if (!email || !password) {
-    throw Error("All fields must be filled");
+    return next(createError(400, "All fields must be filled"));
   }
   const user = await this.findOne({ email });
 
   if (!user) {
-    throw Error("Invalid Login Credentials");
+    return next(createError(400, "Invalid Login Credentials"));
   }
 
   const match = await comparePasswords(password, user.password);
 
   if (!match) {
-    throw Error("Invalid Login Credentials");
+    return next(createError(400, "Invalid Login Credentials"));
   }
 
   // If user is not verified, prevent login
   if (!user.isVerified) {
-    throw Error("Email not verified. Please verify your email first.");
+    return next(
+      createError(403, "Email not verified. Please verify your email first.")
+    );
   }
 
   // Generate an authentication token
@@ -218,7 +218,7 @@ userSchema.statics.initiatePasswordReset = async function (email) {
   const user = await this.findOne({ email });
 
   if (!user) {
-    throw Error("User not found");
+    return next(createError(404, "User not found"));
   }
 
   // Create a JWT for password reset
@@ -234,7 +234,7 @@ userSchema.statics.initiatePasswordReset = async function (email) {
   const html = `
             <p>Dear ${user.firstname},</p>
             <p>Click the following link to reset your password:</p>
-            <a href="process.env.APP_URI/api/user/reset-password/${resetToken}">Reset Password</a>
+            <a href="${process.env.FRONTEND_APP_URI}/reset-password?token=${resetToken}">Reset Password</a>
             console.log(href)
         `;
 
@@ -252,7 +252,7 @@ userSchema.statics.resetPasswordWithToken = async function (
     const user = await this.findById(decoded.userId);
 
     if (!user) {
-      throw Error("User not found");
+      return next(createError(404, "User not found"));
     }
 
     // Update user's password
@@ -263,7 +263,7 @@ userSchema.statics.resetPasswordWithToken = async function (
 
     return user;
   } catch (error) {
-    throw Error("Invalid or expired reset token");
+    return next(createError(401, "Invalid or expired verification token"));
   }
 };
 
@@ -306,7 +306,7 @@ userSchema.statics.updateUserProfile = async function (
 
     return updatedUser;
   } catch (error) {
-    throw error;
+    return next(createError(500, "Error updating user profile"));
   }
 };
 
@@ -322,18 +322,18 @@ userSchema.statics.registerEmployer = async function (
     console.log({ RegisterEmployer: email });
     // validation
     if (!firstname || !lastname || !email || !company || !password) {
-      throw Error("All fields must be filled");
+      return next(createError(400, "All fields must be filled"));
     }
     if (!validator.isEmail(email)) {
-      throw Error("Email is not Valid");
+      return next(createError(400, "Email is not Valid"));
     }
     if (!validator.isStrongPassword(password)) {
-      throw Error("Password not strong enough");
+      return next(createError(400, "Password not strong enough"));
     }
     // Check if the email is already registered
     const existingUser = await this.findOne({ email });
     if (existingUser) {
-      throw new Error("Email is already registered.");
+      return next(createError(400, "Email is already registered."));
     }
 
     // Hash the password
@@ -360,7 +360,7 @@ userSchema.statics.registerEmployer = async function (
     const html = `
         <p>Dear ${firstname},</p>
         <p>Thank you for signing up for TalentBridge. Click on the link below to verify your email:</p>
-        <a href="${process.env.APP_URI}/api/user/verify/${verificationToken}">Verify Email</a>
+        <a href="${process.env.FRONTEND_APP_URI}sign-up/verify-email?token=${verificationToken}">Verify Email</a>
         <p>This link will expire in 10 mins. If you did not sign up for a TalentBridge account,
           you can safely ignore this email.</p>
         <br>
@@ -377,7 +377,55 @@ userSchema.statics.registerEmployer = async function (
 
     return employer;
   } catch (error) {
-    throw error;
+    return next(createError(500, "Error in signing up employer"));
+  }
+};
+
+// Define a static method for resending verification emails
+userSchema.statics.resendVerificationEmail = async function (email) {
+  try {
+    // Find the user by email in your database
+    const user = await this.findOne({ email });
+
+    if (!user) {
+      // User not found, return an error
+      return next(createError(404, "User not found!"));
+    }
+
+    // Check if the user is already verified
+    if (user.isVerified) {
+      return next(createError(400, "Email already verified"));
+    }
+
+    // Generate a new verification token (same as during signup)
+    const verificationToken = jwt.sign(
+      { userId: user._id },
+      process.env.SECRET,
+      { expiresIn: "10m" }
+    );
+
+    // Send the verification email (similar to the signup process)
+    const subject = "Account Verification";
+    const html = `
+       <p>Dear ${firstname},</p>
+        <p>Thank you for signing up for TalentBridge. Click on the link below to verify your email:</p>
+        <a href="${process.env.FRONTEND_APP_URI}sign-up/verify-email?token=${verificationToken}">Verify Email</a>
+        <p>This link will expire in 10 mins. If you did not sign up for a TalentBridge account,
+          you can safely ignore this email.</p>
+        <br>
+
+        <p>Best,</p>
+
+        <p>The TalentBridge Team</p>
+    `;
+
+    await sendEmail(email, subject, html);
+
+    await user.save();
+
+    return "Verification email sent successfully";
+  } catch (error) {
+    return next(createError(500, "Error resending verification email!"));
   }
 };
 
@@ -387,7 +435,7 @@ userSchema.statics.promoteToAdmin = async function (email) {
     const user = await this.findOne({ email });
 
     if (!user) {
-      throw new Error("User not found");
+      return next(createError(404, "User not found"));
     }
 
     // Check if the user is already an admin
@@ -403,7 +451,7 @@ userSchema.statics.promoteToAdmin = async function (email) {
 
     return user;
   } catch (error) {
-    throw error;
+    return next(createError(500, "Error promoting user to admin"));
   }
 };
 
@@ -413,7 +461,7 @@ userSchema.statics.getAllUsers = async function () {
     const users = await this.find();
     return users;
   } catch (error) {
-    throw new Error(`Error fetching all users: ${error.message}`);
+    return next(createError(500, "Error fetching all users"));
   }
 };
 
@@ -424,24 +472,24 @@ userSchema.statics.getUserProfile = async function (userId) {
     const user = await User.findById(userId);
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return next(createError(404, "User not found"));
     }
     return user;
   } catch (error) {
-    throw error;
+    return next(createError(500, "Error getting user profile"));
   }
 };
 
 // Static method for sending job notifications
 userSchema.statics.sendJobNotifications = async function () {
   try {
-    const JobListing = mongoose.model("JobListing"); // Replace 'JobListing' with your actual model name
+    const JobListing = mongoose.model("JobListing");
 
     // Retrieve all users with job preferences who want to receive notifications
     const usersWithPreferences = await this.find({
-      jobPreferences: { $exists: true, $not: { $size: 0 } }, // Users with non-empty preferences
-      receiveJobNotifications: true, // Assuming you have a field for this setting
-      isVerified: true, // Optionally, ensure users are verified
+      jobPreferences: { $exists: true, $not: { $size: 0 } },
+      receiveJobNotifications: true,
+      isVerified: true,
     });
 
     // Loop through each user
@@ -492,7 +540,7 @@ userSchema.statics.sendJobNotifications = async function () {
       }
     });
   } catch (error) {
-    throw error;
+    return next(createError(500, "Error Sending Job Notifications"));
   }
 };
 
@@ -502,22 +550,47 @@ userSchema.statics.deleteUser = async function (userId, email) {
     // Find the user by their ID and remove them from the database
     const deletedUser = await this.findByIdAndRemove(userId);
     if (!deletedUser) {
-      return res.status(404).json({ error: "User not found" });
+      return next(createError(404, "User not found"));
     }
     if (deletedUser.email !== email) {
-      return res.status(400).json({
-        error: "Email confirmation failed. Please provide the correct email.",
-      });
+      return next(
+        createError(
+          400,
+          "Email confirmation failed. Please provide the correct email."
+        )
+      );
     }
     return deletedUser;
   } catch (error) {
-    throw error;
+    return next(createError(404, "Error Deleting User Account"));
   }
 };
 
 // Schedule the task to run daily
-cron.schedule("0 0 * * *", () => {
+cron.schedule("0 0 * * *", function () {
   this.sendJobNotifications();
+});
+cron.schedule("0 0 * * *", async function () {
+  try {
+    const verificationTimeLimit = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    const currentTime = new Date();
+    const thresholdTime = new Date(currentTime - verificationTimeLimit);
+
+    // Find users who haven't verified their email and registered more than 24 hours ago
+    const usersToDelete = await this.find({
+      isVerified: false,
+      createdAt: { $lt: thresholdTime },
+    });
+
+    // Delete the users
+    for (const user of usersToDelete) {
+      await User.findByIdAndDelete(user._id);
+    }
+
+    console.log("Scheduled user cleanup job completed.");
+  } catch (error) {
+    console.error("Error in scheduled user cleanup job:", error);
+  }
 });
 
 module.exports = mongoose.model("User", userSchema);

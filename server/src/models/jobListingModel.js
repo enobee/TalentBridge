@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const createError = require("../middleware/createError");
 
 const jobListingSchema = new mongoose.Schema(
   {
@@ -6,24 +7,48 @@ const jobListingSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    company: {
+    description: {
+      type: String,
+      required: true,
+    },
+    skills: {
+      type: String,
+      required: true,
+    },
+    companyName: {
+      type: String,
+    },
+    companyWebsite: {
+      type: String,
+    },
+    experienceLevel: {
+      type: String,
+    },
+    language: {
+      type: String,
+    },
+    availability: {
+      type: String,
+      required: true,
+    },
+    jobType: {
       type: String,
       required: true,
     },
     location: {
       type: String,
     },
-    description: {
+    salary: {
       type: String,
+      required: true,
     },
-    salary: { type: String },
-
     requirements: [{ type: String }],
     postedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", // Reference to the user who posted the job
       required: true,
     },
+
     applicants: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -52,7 +77,7 @@ jobListingSchema.statics.createJobListing = async function (data) {
     await jobListing.save();
     return jobListing;
   } catch (error) {
-    throw error;
+    return next(createError(500, "Error creating a job listing!"));
   }
 };
 
@@ -62,8 +87,6 @@ jobListingSchema.statics.updateJobListing = async function (
   data
 ) {
   try {
-    console.log(jobListingId);
-    console.log(data);
     const updatedJobListing = await this.findByIdAndUpdate(
       jobListingId,
       {
@@ -77,11 +100,11 @@ jobListingSchema.statics.updateJobListing = async function (
     );
 
     if (!updatedJobListing) {
-      throw new Error("Job listing not found");
+      return next(createError(404, "Job listing not found"));
     }
     return updatedJobListing;
   } catch (error) {
-    throw error;
+    return next(createError(500, "Error updating a job listing"));
   }
 };
 
@@ -90,11 +113,11 @@ jobListingSchema.statics.deleteJobListing = async function (jobListingId) {
   try {
     const deletedJobListing = await this.findByIdAndRemove(jobListingId);
     if (!deletedJobListing) {
-      throw new Error("Job listing not found");
+      return next(createError(404, "Job listing not found"));
     }
     return deletedJobListing;
   } catch (error) {
-    throw error;
+    return next(createError(500, "Error deleting a job listing!"));
   }
 };
 
@@ -103,7 +126,7 @@ jobListingSchema.statics.getAllJobListings = async function () {
   try {
     return await this.find().populate("postedBy");
   } catch (error) {
-    throw error;
+    return next(createError(500, "Error getting all job listings!"));
   }
 };
 
@@ -112,76 +135,12 @@ jobListingSchema.statics.getJobListingById = async function (jobListingId) {
   try {
     return await this.findById(jobListingId).populate("postedBy");
   } catch (error) {
-    throw error;
+    return next(createError(500, "Error getting a job listing!"));
   }
 };
 
-// jobListingSchema.statics.paginateJobListings = async function (
-//   page,
-//   perPage,
-//   query
-// ) {
-//   try {
-//     const totalJobs = await this.countDocuments(query);
-//     const totalPages = Math.ceil(totalJobs / perPage);
-
-//    ** const options = {
-//     page: parseInt(page, 10) || 1,
-//     limit: parseInt(perPage, 10) || 10,
-//   };**...look at this later
-
-//   const sort = { createdAt: -1 }; // Sort by createdAt in descending order
-
-//     // Apply pagination
-//     const jobListings = await this.find(query)
-//       .sort(sort)
-//       .skip((page - 1) * perPage)
-//       .limit(perPage)
-//       .populate("postedBy"); // Populate the 'postedBy' field with user details
-
-//     return {
-//       jobListings,
-//       totalPages,
-//     };
-//   } catch (error) {
-//     throw error;
-//   }
-// };
-
-jobListingSchema.statics.filterJobListings = async function (
-  filterCriteria
-  //   page,
-  //   limit
-) {
-  try {
-    const query = {};
-
-    if (filters.title) {
-      query.title = { $regex: filterCriteria.title, $options: "i" }; // Case-insensitive title search
-    }
-
-    if (filters.location) {
-      query.location = { $regex: filterCriteria.location, $options: "i" }; // Case-insensitive location search
-    }
-
-    // const skip = (page - 1) * limit;
-
-    const jobListings = await this.find(query).sort({ createdAt: -1 }); // Sort by creation date, descending
-    //   .skip(skip)
-    //   .limit(limit);
-
-    return jobListings;
-  } catch (error) {
-    throw error;
-  }
-};
-
-//
-jobListingSchema.statics.searchJobListings = async function (
-  searchQuery
-  //   page,
-  //   limit
-) {
+// Static method for Searching for a job listing
+jobListingSchema.statics.searchJobListings = async function (searchQuery) {
   try {
     const query = {};
 
@@ -193,15 +152,11 @@ jobListingSchema.statics.searchJobListings = async function (
       ];
     }
 
-    // const skip = (page - 1) * limit;
-
     const jobListings = await this.find(query).sort({ createdAt: -1 }); // Sort by creation date, descending
-    //   .skip(skip)
-    //   .limit(limit);
 
     return jobListings;
   } catch (error) {
-    throw error;
+    return next(createError(500, "Error searching for job listing!"));
   }
 };
 
@@ -212,16 +167,19 @@ jobListingSchema.statics.applyToJob = async function (jobId, userId) {
 
     // Check if the job is posted by an employer (jobType references an "employer" user)
     if (job.jobRole !== "employer") {
-      return res.status(400).json({
-        error: "Please use the application link posted to apply for this job.",
-      });
+      return next(
+        createError(
+          400,
+          "Please use the application link posted to apply for this job."
+        )
+      );
     }
 
     // Check if the user has already applied for this job
     if (job.hasUserApplied) {
-      return res
-        .status(400)
-        .json({ error: "You have already applied to this job listing." });
+      return next(
+        createError(400, "You have already applied to this job listing.")
+      );
     }
     // If the user hasn't applied, set the hasUserApplied field to true
     job.hasUserApplied = true;
@@ -231,19 +189,22 @@ jobListingSchema.statics.applyToJob = async function (jobId, userId) {
     await job.save();
     return "Application submitted successfully.";
   } catch (error) {
-    throw error;
+    return next(createError(500, "Error submitting application!"));
   }
 };
 
+// Statics method to find Applicants that applied for a job listing
 jobListingSchema.statics.findApplicantsForJob = async function (jobId) {
   try {
     const job = await this.findById(jobId);
     if (!job) {
-      throw new Error("Job listing not found");
+      return next(createError(400, "Job listing not found!"));
     }
     return job.applicants;
   } catch (error) {
-    throw error;
+    return next(
+      createError(500, "Error getting applicants that applied for this job!")
+    );
   }
 };
 

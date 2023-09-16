@@ -75,6 +75,22 @@ const initiatePasswordReset = async (req, res) => {
   }
 };
 
+// Controller for resending verification email
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body; // Get the user's email from the request
+
+    // Call the static method to resend the verification email
+    const message = await User.resendVerificationEmail(email);
+
+    // Handle the success message and send a response
+    return res.status(200).json({ message });
+  } catch (error) {
+    // Handle errors and send an appropriate response
+    return res.status(500).json({ error: "An error occurred" });
+  }
+};
+
 // Controller for resetting password using reset token
 const resetPasswordWithToken = async (req, res) => {
   try {
@@ -94,7 +110,6 @@ const resetPasswordWithToken = async (req, res) => {
 
 const updateUserProfile = async (req, res) => {
   try {
-    console.log({ ReqBody: req.body });
     const {
       firstname,
       lastname,
@@ -105,7 +120,8 @@ const updateUserProfile = async (req, res) => {
       location,
       skills,
       personalWebsite,
-      socialMedia,
+      github,
+      linkedin,
       receiveJobNotifications,
       jobPreferences,
     } = req.body;
@@ -116,7 +132,6 @@ const updateUserProfile = async (req, res) => {
     const profilePicturePath = profilePicture[0].filename;
     const resumePath = resume[0].filename;
 
-    // const token = req.header("Authorization").replace("Bearer ", "");
     const authHeader = req.headers.authorization || req.headers.Authorization;
     const token = authHeader.split(" ")[1];
 
@@ -130,7 +145,8 @@ const updateUserProfile = async (req, res) => {
       location,
       skills,
       personalWebsite,
-      socialMedia,
+      github,
+      linkedin,
       receiveJobNotifications,
       jobPreferences,
     };
@@ -147,7 +163,7 @@ const updateUserProfile = async (req, res) => {
       .json({ message: "Profile updated successfully", user: updatedUser });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ error: "Error updating profile" });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -171,7 +187,7 @@ const sendJobNotification = async (req, res) => {
 
     res.status(200).json({ message: "Job notifications sent successfully." });
   } catch (error) {
-    res.status(500).json({ error: "Error sending job notifications" });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -191,7 +207,7 @@ const getUserProfile = async (req, res) => {
     const user = await User.getUserProfile(id);
     res.status(200).json({ user });
   } catch (error) {
-    res.status(500).json({ error: "Error fetching user profile" });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -211,6 +227,7 @@ module.exports = {
   signupUser,
   verifyEmail,
   loginUser,
+  resendVerificationEmail,
   initiatePasswordReset,
   resetPasswordWithToken,
   updateUserProfile,

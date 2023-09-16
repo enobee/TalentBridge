@@ -6,6 +6,7 @@ const {
   signupUser,
   verifyEmail,
   loginUser,
+  resendVerificationEmail,
   initiatePasswordReset,
   resetPasswordWithToken,
   updateUserProfile,
@@ -31,6 +32,9 @@ router.get("/verify/:token", verifyEmail);
 
 //Route for logging in user
 router.post("/login", loginUser);
+
+// Route for resending verification email
+router.post("/resend-verification-email", resendVerificationEmail);
 
 // Route for initiating password reset
 router.post("/initiate-password-reset", initiatePasswordReset);
@@ -61,7 +65,7 @@ router.post("/employer-signup", employerSignUp);
 router.get("/get-all-users", verifyToken, isAdmin, getAllUsers);
 
 // Route for getting a user profile
-router.get("/:id/profile", verifyToken, onlyEmployerAndAdmin, getUserProfile);
+router.get("/:id/profile", verifyToken, getUserProfile);
 
 // Route for deleting a user from database
 router.delete("/:userId", verifyToken, deleteUser);

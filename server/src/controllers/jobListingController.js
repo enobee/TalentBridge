@@ -3,19 +3,35 @@ const JobListing = require("../models/jobListingModel");
 // Controller for creating job listing
 const createJobListing = async (req, res) => {
   try {
-    const { title, description, location, salary, company } = req.body;
-    console.log({ reqUser: req.user });
+    const {
+      title,
+      description,
+      skills,
+      availability,
+      experienceLevel,
+      language,
+      jobType,
+      salary,
+      companyName,
+      companyWebsite,
+      location,
+    } = req.body;
     const userId = req.user.id;
     const jobRole = req.user.role;
-    console.log({ userId: userId });
 
     const jobListingData = {
       title,
       description,
-      location,
+      skills,
+      availability,
+      experienceLevel,
+      language,
+      jobType,
       salary,
+      companyName,
+      companyWebsite,
+      location,
       postedBy: userId, // Assign the user who is posting the job listing
-      company,
       jobRole: jobRole,
     };
 
@@ -29,14 +45,33 @@ const createJobListing = async (req, res) => {
 // Controller for updating job listing
 const updateJobListing = async (req, res) => {
   try {
-    const { title, description, location, salary } = req.body;
+    const {
+      title,
+      description,
+      skills,
+      availability,
+      experienceLevel,
+      language,
+      jobType,
+      salary,
+      companyName,
+      companyWebsite,
+      location,
+    } = req.body;
     const { id } = req.params;
 
     const data = {
       title,
       description,
-      location,
+      skills,
+      availability,
+      experienceLevel,
+      language,
+      jobType,
       salary,
+      companyName,
+      companyWebsite,
+      location,
     };
 
     const updatedJobListing = await JobListing.updateJobListing(id, data);
@@ -105,17 +140,6 @@ const filterJobListing = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// Controller for paginating job listings
-// const paginateJobListing = async (req, res) => {
-//     const { page, perPage } = req.query;
-//     try {
-//       const jobListings = await JobListing.paginateJobListings(page, perPage);
-//       res.status(200).json(jobListings);
-//     } catch (error) {
-//       res.status(500).json({ error: error.message });
-//     }
-// }
 
 const applyToJob = async (req, res) => {
   try {
