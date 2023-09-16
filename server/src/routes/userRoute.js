@@ -28,7 +28,7 @@ const router = express.Router();
 router.post("/signup", signupUser);
 
 // Route for email verification
-router.get("/verify/:token", verifyEmail);
+router.get("/verify", verifyEmail);
 
 //Route for logging in user
 router.post("/login", loginUser);
