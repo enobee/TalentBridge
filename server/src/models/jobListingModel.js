@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const createError = require("../middleware/createError");
+
 
 const jobListingSchema = new mongoose.Schema(
   {
@@ -77,7 +77,7 @@ jobListingSchema.statics.createJobListing = async function (data) {
     await jobListing.save();
     return jobListing;
   } catch (error) {
-    return next(createError(500, "Error creating a job listing!"));
+    throw error
   }
 };
 
@@ -100,11 +100,11 @@ jobListingSchema.statics.updateJobListing = async function (
     );
 
     if (!updatedJobListing) {
-      return next(createError(404, "Job listing not found"));
+      throw new Error("Job listing not found");
     }
     return updatedJobListing;
   } catch (error) {
-    return next(createError(500, "Error updating a job listing"));
+    throw new Error("Error updating a job listing");
   }
 };
 
@@ -113,11 +113,11 @@ jobListingSchema.statics.deleteJobListing = async function (jobListingId) {
   try {
     const deletedJobListing = await this.findByIdAndRemove(jobListingId);
     if (!deletedJobListing) {
-      return next(createError(404, "Job listing not found"));
+      throw new Error("Job listing not found");
     }
     return deletedJobListing;
   } catch (error) {
-    return next(createError(500, "Error deleting a job listing!"));
+    throw error
   }
 };
 
@@ -126,7 +126,7 @@ jobListingSchema.statics.getAllJobListings = async function () {
   try {
     return await this.find().populate("postedBy");
   } catch (error) {
-    return next(createError(500, "Error getting all job listings!"));
+   throw error;
   }
 };
 
@@ -135,7 +135,7 @@ jobListingSchema.statics.getJobListingById = async function (jobListingId) {
   try {
     return await this.findById(jobListingId).populate("postedBy");
   } catch (error) {
-    return next(createError(500, "Error getting a job listing!"));
+   throw error
   }
 };
 
@@ -156,7 +156,7 @@ jobListingSchema.statics.searchJobListings = async function (searchQuery) {
 
     return jobListings;
   } catch (error) {
-    return next(createError(500, "Error searching for job listing!"));
+    throw error
   }
 };
 
@@ -167,19 +167,12 @@ jobListingSchema.statics.applyToJob = async function (jobId, userId) {
 
     // Check if the job is posted by an employer (jobType references an "employer" user)
     if (job.jobRole !== "employer") {
-      return next(
-        createError(
-          400,
-          "Please use the application link posted to apply for this job."
-        )
-      );
+      throw new Error("Please use the application link posted to apply for this job.")
     }
 
     // Check if the user has already applied for this job
     if (job.hasUserApplied) {
-      return next(
-        createError(400, "You have already applied to this job listing.")
-      );
+      throw new Error("You have already applied to this job listing.")
     }
     // If the user hasn't applied, set the hasUserApplied field to true
     job.hasUserApplied = true;
@@ -189,7 +182,7 @@ jobListingSchema.statics.applyToJob = async function (jobId, userId) {
     await job.save();
     return "Application submitted successfully.";
   } catch (error) {
-    return next(createError(500, "Error submitting application!"));
+    throw error
   }
 };
 
@@ -198,14 +191,13 @@ jobListingSchema.statics.findApplicantsForJob = async function (jobId) {
   try {
     const job = await this.findById(jobId);
     if (!job) {
-      return next(createError(400, "Job listing not found!"));
+      throw new Error("Job listing not found!");
+      
     }
     return job.applicants;
   } catch (error) {
-    return next(
-      createError(500, "Error getting applicants that applied for this job!")
-    );
-  }
+    throw error
+  } 
 };
 
 const JobListing = mongoose.model("JobListing", jobListingSchema);
